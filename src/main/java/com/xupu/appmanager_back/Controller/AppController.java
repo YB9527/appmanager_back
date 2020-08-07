@@ -1,8 +1,11 @@
 package com.xupu.appmanager_back.Controller;
 
 import com.xupu.appmanager_back.Service.IAppService;
+import com.xupu.appmanager_back.Service.UserService;
 import com.xupu.appmanager_back.po.AppVersion;
 import com.xupu.appmanager_back.po.Crash;
+import com.xupu.appmanager_back.po.DownUser;
+import com.xupu.appmanager_back.po.User;
 import com.xupu.appmanager_back.tools.FileTool;
 import com.xupu.appmanager_back.tools.SpringBootTool;
 import org.omg.CORBA.PUBLIC_MEMBER;
@@ -10,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
+import sun.java2d.pipe.AlphaPaintPipe;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,6 +28,8 @@ public class AppController extends BasicController {
 
     @Autowired
     private IAppService appService;
+    @Autowired
+    private UserService userService;
 
     @PostMapping("/saveappversion")
     @ResponseBody
@@ -33,9 +39,7 @@ public class AppController extends BasicController {
         String fileName = file.getOriginalFilename().replace(".", "_" + System.currentTimeMillis() + ".");
         String savePath = SpringBootTool.getRootDir() + fileName;
         FileTool.savefile(file, savePath);
-
         appVersion.setFilelength(file.getSize());
-        appVersion.setDownloadcount(0);
         appVersion.setFilename(fileName);
         appVersion.setUploaddate(System.currentTimeMillis());
         AppVersion newAppVersion = appService.save(appVersion);
@@ -70,67 +74,63 @@ public class AppController extends BasicController {
         }
     }
 
-    /**
-     * 多个照片上传
-     *
-     * @param uploadFiles
-     * @param request
-     * @return
-     */
-
-    public void upload(MultipartFile[] uploadFiles, HttpServletRequest request) {
-        MultipartHttpServletRequest params = ((MultipartHttpServletRequest) request);
-        // 获取文件
-        Map<String, MultipartFile> map = params.getFileMap();
-    }
 
     @RequestMapping(value = "/downloadapp")
-    public String downloadapp(HttpServletResponse res, Integer id) {
+    public String downloadapp(HttpServletResponse res, Integer id, String user) {
+        User userPo = stringToObject(user, User.class);
         AppVersion appVersion = appService.findById(id);
-        appVersion.setDownloadcount(appVersion.getDownloadcount() + 1);
-        if (appVersion == null) {
-            respon(false, "文件不存在", null);
-        } else {
-            String filePath = SpringBootTool.getRootDir() + appVersion.getFilename();
-            if (!new File(filePath).exists()) {
-                respon(false, "文件不存在", null);
-            } else {
-                download(res, filePath);
-                appService.save(appVersion);
-            }
+        if (userPo == null) {
+            //老版本没有传user
+            userPo = userService.findWebUser();
         }
-        return respon(true, "", null);
+        return downloadapp(res, appVersion, userPo);
     }
 
+    /**
+     * 网页下载 app
+     *
+     * @param res
+     * @return
+     */
+    @RequestMapping(value = "/downloadnewsapp")
+    public String downloadnewsapp(HttpServletResponse res) {
+        AppVersion appVersion = appService.findNewsApp();
+        return downloadapp(res, appVersion, userService.findWebUser());
+    }
 
-    public void download(HttpServletResponse res, String filePath) {
-        String fileName = FileTool.getFileName(filePath);
-        res.setHeader("content-type", "application/octet-stream");
-        res.setContentType("application/octet-stream");
-        res.setHeader("Content-Disposition", "attachment;filename=" + fileName);
-        byte[] buff = new byte[1024];
-        BufferedInputStream bis = null;
-        OutputStream os = null;
-        try {
-            os = res.getOutputStream();
-            bis = new BufferedInputStream(new FileInputStream(new File(filePath)));
-            int i = bis.read(buff);
-            while (i != -1) {
-                os.write(buff, 0, buff.length);
-                os.flush();
-                i = bis.read(buff);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (bis != null) {
-                try {
-                    bis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+    /**
+     * 下载app
+     *
+     * @param res
+     * @param appVersion app
+     * @param user   下载用户
+     * @return
+     */
+    public String downloadapp(HttpServletResponse res, AppVersion appVersion, User user) {
+
+        if (appVersion != null && user != null) {
+            String filePath = SpringBootTool.getRootDir() + appVersion.getFilename();
+            if (!new File(filePath).exists()) {
+                return respon(false, "文件不存在", null);
+            } else {
+                FileTool.DownLoadFile(res, filePath);
+                DownUser downUser = appService.findByAppVersionAndUser(appVersion, user);
+                if (downUser == null) {
+                    downUser = new DownUser(appVersion, user);
                 }
+
+                int index = appVersion.getDownusers().indexOf(downUser);
+                if (index == -1) {
+                    appVersion.getDownusers().add(downUser);
+                } else {
+                    downUser = appVersion.getDownusers().get(index);
+                }
+                downUser.setDowncount(downUser.getDowncount() + 1);
+                downUser = userService.saveDownUser(downUser);
+                return respon(true, "下载成功", downUser);
             }
         }
+        return respon(false, "文件不存在", null);
     }
 
     /**

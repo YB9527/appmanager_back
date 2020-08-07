@@ -2,7 +2,10 @@ package com.xupu.appmanager_back.Service;
 
 import com.sun.org.apache.regexp.internal.RE;
 import com.xupu.appmanager_back.po.AppVersion;
+import com.xupu.appmanager_back.po.DownUser;
+import com.xupu.appmanager_back.po.User;
 import com.xupu.appmanager_back.repository.AppRepository;
+import com.xupu.appmanager_back.repository.DownUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +16,9 @@ public class AppService  implements IAppService {
 
     @Autowired
     private AppRepository appRepository;
+    @Autowired
+    private DownUserRepository downUserRepository;
+
     @Override
     public AppVersion save(AppVersion appVersion) {
       return   appRepository.save(appVersion);
@@ -54,5 +60,10 @@ public class AppService  implements IAppService {
 
         }
         return null;
+    }
+
+    @Override
+    public DownUser findByAppVersionAndUser(AppVersion appVersion, User user) {
+        return downUserRepository.findByAppversionAndUser(appVersion,user);
     }
 }

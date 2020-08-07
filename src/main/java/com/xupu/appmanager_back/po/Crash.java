@@ -2,6 +2,7 @@ package com.xupu.appmanager_back.po;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Objects;
 
 @Entity
 public class Crash   {
@@ -18,7 +19,7 @@ public class Crash   {
     private Boolean ishandle;//是否已处理
     private String handlemessage;//处理信息
     private String version;//软件的版本号
-
+    private Integer versioncode;//软件的版本的数字
     @Transient
     private AppVersion appVersion;
 
@@ -112,5 +113,26 @@ public class Crash   {
 
     public void setPhonename(String phonename) {
         this.phonename = phonename;
+    }
+
+    public Integer getVersioncode() {
+        return versioncode;
+    }
+
+    public void setVersioncode(Integer versioncode) {
+        this.versioncode = versioncode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Crash that = (Crash) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

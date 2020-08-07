@@ -1,6 +1,8 @@
 package com.xupu.appmanager_back.Service;
 
 import com.xupu.appmanager_back.po.AppVersion;
+import com.xupu.appmanager_back.po.DownUser;
+import com.xupu.appmanager_back.po.User;
 
 import java.util.List;
 
@@ -20,4 +22,6 @@ public interface IAppService {
     AppVersion findNewsApp();
 
     AppVersion flush(AppVersion appVersion);
+
+    DownUser findByAppVersionAndUser(AppVersion appVersion, User user);
 }

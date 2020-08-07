@@ -8,7 +8,9 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 public class AppVersion  {
@@ -20,10 +22,14 @@ public class AppVersion  {
     private String levelcontent;
     private Boolean isforce;
     private String version;
+    private String versioncode;
     private String filename;
     private Long filelength;
     private Long uploaddate;//上传日期
-    private Integer downloadcount;//下载次数
+
+    @OneToMany(mappedBy = "appversion")
+    private List<DownUser> downusers;
+
     @Transient
     private List<Crash> crashs;
 
@@ -95,13 +101,7 @@ public class AppVersion  {
         this.uploaddate = uploaddate;
     }
 
-    public Integer getDownloadcount() {
-        return downloadcount;
-    }
 
-    public void setDownloadcount(Integer downloadcount) {
-        this.downloadcount = downloadcount;
-    }
 
     public String getFilename() {
         return filename;
@@ -126,5 +126,37 @@ public class AppVersion  {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public String getVersioncode() {
+        return versioncode;
+    }
+
+    public void setVersioncode(String versioncode) {
+        this.versioncode = versioncode;
+    }
+
+    public List<DownUser> getDownusers() {
+        if(downusers == null){
+            downusers = new ArrayList<>();
+        }
+        return downusers ;
+    }
+
+    public void setDownusers(List<DownUser> downusers) {
+        this.downusers = downusers;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AppVersion that = (AppVersion) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
